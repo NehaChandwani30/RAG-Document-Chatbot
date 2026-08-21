@@ -1,218 +1,248 @@
-# 🤖 RAG Document Chatbot
+# 📚 RAG Document Chatbot
 
-A **Retrieval-Augmented Generation (RAG)** chatbot that allows users to ask questions about their own PDF documents and receive **context-aware answers**.
+A Retrieval-Augmented Generation (RAG) chatbot that allows users to upload PDF documents and ask questions about their content. The system combines semantic retrieval with BM25 keyword search to retrieve relevant document chunks and uses a local LLM to generate context-grounded answers.
 
-The system combines 🔎 **Semantic Search** and 🔤 **BM25 keyword search** using a hybrid retrieval approach. Relevant document chunks are retrieved and provided as context to a local **Large Language Model (LLM)**, which generates the final response.
+## 🔎 Overview
 
----
+Traditional LLMs may generate responses that are not grounded in a user's private documents. This project addresses that problem by retrieving relevant information from an uploaded PDF before generating an answer.
 
-## ✨ Features
+The system implements a hybrid retrieval pipeline that combines:
 
-* 📄 PDF document processing
-* ✂️ Text extraction and chunking
-* 🧠 Vector embeddings
-* 🗄️ ChromaDB vector database
-* 🔎 Semantic similarity search
-* 🔤 BM25 keyword-based retrieval
-* 🔀 Hybrid retrieval
-* 📊 Semantic and BM25 score normalization
-* 🏆 Weighted hybrid ranking
-* 🎯 Top-K document retrieval
-* 🦙 Local LLM inference using Ollama
-* 🧠 Llama 3.2 integration
-* 💬 Conversational memory
-* 🔄 Context-aware follow-up questions
-* 🌐 Streamlit chatbot interface
-* 📑 Source/page-aware retrieval
-* 📈 Retrieval evaluation using Recall@5
+* Semantic similarity search using vector embeddings
+* BM25 keyword-based retrieval
+* Weighted hybrid ranking
+* Context-aware question rewriting
+* Local LLM-based answer generation
+* Source and page-level retrieval
+* Retrieval evaluation using Recall@5
 
----
+## 🚀 Key Features
 
-## 🛠️ Technology Stack
+* PDF document ingestion using PyPDFLoader
+* Recursive text chunking with configurable chunk size and overlap
+* Local text embeddings using `nomic-embed-text`
+* Persistent vector storage using ChromaDB
+* Semantic similarity retrieval
+* BM25 keyword retrieval
+* Hybrid retrieval using normalized weighted scores
+* Top-K document retrieval
+* Conversation-aware question rewriting
+* Local LLM inference using Llama 3.2 through Ollama
+* Context-grounded answer generation
+* Source page identification
+* Streamlit-based chatbot interface
+* Retrieval evaluation comparing Semantic, BM25, and Hybrid Search
 
-| Component               | Technology            |
-| ----------------------- | --------------------- |
-| 💻 Programming Language | Python                |
-| 🧠 LLM                  | Llama 3.2             |
-| ⚙️ LLM Runtime          | Ollama                |
-| 🔗 RAG Framework        | LangChain             |
-| 🗄️ Vector Database     | ChromaDB              |
-| 🧬 Embeddings           | Sentence Transformers |
-| 🔤 Keyword Retrieval    | BM25                  |
-| 📄 PDF Processing       | PyPDF                 |
-| 🌐 Frontend             | Streamlit             |
-| 📦 Version Control      | Git & GitHub          |
+## 🏗️ Architecture
 
----
+```text
+                    PDF Document
+                         |
+                         v
+                  Document Loader
+                    PyPDFLoader
+                         |
+                         v
+                  Text Chunking
+              RecursiveCharacterTextSplitter
+                         |
+                         v
+                  Text Embeddings
+                 nomic-embed-text
+                         |
+                         v
+                     ChromaDB
+                  Vector Database
+                         |
+             +-----------+-----------+
+             |                       |
+             v                       v
+       Semantic Search           BM25 Search
+             |                       |
+             +-----------+-----------+
+                         |
+                         v
+                  Score Normalization
+                         |
+                         v
+                  Hybrid Ranking
+             60% Semantic + 40% BM25
+                         |
+                         v
+                    Top-K Chunks
+                         |
+                         v
+                 Context Construction
+                         |
+                         v
+                   Llama 3.2
+                         |
+                         v
+                   Final Answer
+                         |
+                         v
+                  Streamlit Interface
+```
 
-## 🔄 How It Works
+## ⚙️ How It Works
 
-### 1️⃣ Document Loading
+### 1. PDF Loading
 
-The PDF document is loaded using **PyPDFLoader**. Each page is converted into a LangChain `Document` object containing the page content and metadata such as the page number.
+The uploaded PDF is processed using `PyPDFLoader`.
 
-### 2️⃣ Text Chunking
+Each page is converted into a LangChain `Document` containing the page text and metadata such as the source and page number.
 
-The extracted document text is divided into smaller chunks so that relevant sections can be retrieved efficiently.
+### 2. Document Chunking
 
-### 3️⃣ Embedding Generation
+The extracted text is divided into smaller overlapping chunks using `RecursiveCharacterTextSplitter`.
 
-Each document chunk is converted into a numerical vector using an embedding model. These vectors represent the semantic meaning of the document content.
+Current configuration:
 
-### 4️⃣ Vector Storage
+```text
+Chunk size: 1000
+Chunk overlap: 200
+```
 
-The generated embeddings are stored in **ChromaDB**, allowing the system to efficiently retrieve semantically similar document chunks.
+Chunking allows the retrieval system to search smaller and more relevant sections of the document instead of processing the entire document at once.
 
-### 5️⃣ Semantic Search 🔎
+### 3. Embedding Generation
 
-The user's question is converted into an embedding and compared with the stored document embeddings.
+Each document chunk is converted into a vector representation using:
 
-Semantic search helps retrieve relevant information even when the exact words used in the question do not appear in the document.
+```text
+nomic-embed-text
+```
 
-### 6️⃣ BM25 Retrieval 🔤
+The embedding model runs locally through Ollama.
 
-BM25 performs keyword-based retrieval and is particularly useful when important terms from the user's question appear directly in the document.
+These vectors allow the system to identify chunks that are semantically similar to a user's question.
 
-### 7️⃣ Hybrid Retrieval 🔀
+### 4. Vector Storage
 
-The system combines semantic search and BM25 retrieval.
+Document embeddings are stored in ChromaDB.
 
-The scores from both methods are normalized and combined using weighted scoring:
+ChromaDB provides persistent vector storage and allows the application to perform similarity searches against the processed document.
+
+### 5. Semantic Retrieval
+
+For semantic search, the user's question is converted into an embedding and compared against the document chunk embeddings stored in ChromaDB.
+
+This allows the system to retrieve relevant information even when the wording of the question differs from the wording used in the document.
+
+### 6. BM25 Retrieval
+
+The project also implements BM25 keyword-based retrieval.
+
+BM25 is useful when important keywords from the user's question appear directly in the document.
+
+This complements semantic search by providing an additional lexical retrieval signal.
+
+### 7. Hybrid Retrieval
+
+The project combines semantic retrieval and BM25 retrieval using normalized scores.
+
+The current weighting is:
 
 ```text
 Hybrid Score =
-    0.6 × Semantic Score
-    +
-    0.4 × BM25 Score
+0.6 × Semantic Score +
+0.4 × BM25 Score
 ```
 
-This allows the system to benefit from both **semantic understanding** and **exact keyword matching**.
+The combined score is used to rank the document chunks, and the top 5 chunks are selected as context for the LLM.
 
-### 8️⃣ Top-K Retrieval 🎯
+This approach combines semantic understanding with exact keyword matching.
 
-The retrieved chunks are ranked using the combined hybrid score.
+### 8. Question Rewriting
 
-The current system retrieves:
+The system uses conversation history to rewrite follow-up questions into standalone questions before retrieval.
+
+For example:
 
 ```text
-K = 5
+User: What is Generative AI?
+
+User: What are its applications?
 ```
 
-relevant chunks.
-
-### 9️⃣ Context Construction 📚
-
-The retrieved document chunks are provided to the LLM as context.
-
-### 🔟 Answer Generation 🤖
-
-**Llama 3.2** generates an answer based on the retrieved document context.
-
-### 1️⃣1️⃣ Conversational Memory 💬
-
-The chatbot maintains conversation history so that follow-up questions can be understood using previous context.
-
-Example:
+The second question can be rewritten as:
 
 ```text
-👤 User: What is Generative AI?
-
-🤖 Bot: Generative AI is ...
-
-👤 User: What are its applications?
-
-🤖 Bot: Its applications include ...
+What are the applications of Generative AI?
 ```
 
-The second question can be understood using the context of the previous conversation.
+This improves retrieval for conversational queries that depend on previous messages.
 
----
+### 9. Context Construction
 
-## 📈 Retrieval Evaluation
+The top retrieved chunks are combined into a context that is passed to the LLM.
 
-The retrieval system was evaluated using a set of document-based questions.
+The model is instructed to use the provided document context when generating the answer.
 
-Three retrieval approaches were compared:
+### 10. Answer Generation
 
-* 🔎 Semantic Search
-* 🔤 BM25
-* 🔀 Hybrid Retrieval
+Llama 3.2 is used through Ollama to generate the final response.
 
-### 🏆 Results
-
-| Retrieval Method        |    Recall@5 |
-| ----------------------- | ----------: |
-| 🔎 Semantic Search      |      94.12% |
-| 🔤 BM25                 |      82.35% |
-| 🏆 **Hybrid Retrieval** | **100.00%** |
-
-### 📊 Result Analysis
-
-**Semantic Search** achieved **94.12% Recall@5**, demonstrating strong performance in identifying relevant document chunks based on semantic similarity.
-
-**BM25** achieved **82.35% Recall@5**, showing the usefulness of keyword-based retrieval while being less effective for questions requiring broader semantic understanding.
-
-The **Hybrid Retriever** achieved **100.00% Recall@5** on the current evaluation dataset, outperforming both individual retrieval methods.
-
----
-
-## 🤔 Why Hybrid Retrieval?
-
-Semantic search and BM25 have different strengths.
-
-### 🧠 Semantic Search
-
-Effective when the **meaning** of the question is similar to the meaning of the document, even when the exact words differ.
-
-### 🔤 BM25
-
-Effective when important **keywords** from the question appear directly in the document.
-
-### 🔀 Combined Approach
+The system is designed to avoid introducing unsupported information and responds with:
 
 ```text
-🧠 Semantic Understanding
-          +
-🔤 Keyword Matching
-          =
-🏆 Hybrid Retrieval
+I couldn't find the answer in the provided document.
 ```
 
-The evaluation results show that the hybrid approach achieved **100.00% Recall@5** on the current test dataset.
+when the required information is not available in the retrieved context.
 
----
+## 📊 Retrieval Evaluation
 
-## 📐 Evaluation Method
+The project includes an evaluation script (`evaluate.py`) that compares three retrieval approaches:
 
-For each evaluation question, the system retrieves the **top 5 document chunks**.
+1. Semantic Search
+2. BM25
+3. Hybrid Retrieval
 
-A question is considered successfully retrieved when at least one relevant page appears within the top 5 results.
+The evaluation uses predefined document-based questions and checks whether at least one relevant page appears in the top 5 retrieved results.
 
-The evaluation uses **Recall@5**:
+### Recall@5
 
 ```text
 Recall@5 =
-Number of questions with a relevant result in Top 5
----------------------------------------------------
-Total number of evaluation questions
+Questions with a relevant result in Top 5
+-----------------------------------------
+Total evaluation questions
 ```
 
-### 📌 Current Results
+### Current Evaluation Results
 
-```text
-🔎 Semantic Recall@5: 94.12%
-🔤 BM25 Recall@5:     82.35%
-🏆 Hybrid Recall@5:  100.00%
-```
+| Retrieval Method | Recall@5 |
+| ---------------- | -------: |
+| Semantic Search  |   94.12% |
+| BM25             |   82.35% |
+| Hybrid Retrieval |  100.00% |
 
----
+On the current evaluation dataset, the hybrid retriever achieved **100% Recall@5**, compared with **94.12%** for semantic search and **82.35%** for BM25.
+
+These results are specific to the current test document and evaluation questions and should not be interpreted as a general benchmark.
+
+## 🛠️ Technology Stack
+
+| Technology       | Purpose                               |
+| ---------------- | ------------------------------------- |
+| Python           | Application development               |
+| LangChain        | RAG and document-processing framework |
+| Ollama           | Local model runtime                   |
+| Llama 3.2        | Answer generation                     |
+| nomic-embed-text | Text embeddings                       |
+| ChromaDB         | Vector database                       |
+| BM25             | Keyword retrieval                     |
+| PyPDF            | PDF processing                        |
+| Streamlit        | Web interface                         |
+| Git & GitHub     | Version control                       |
 
 ## 📁 Project Structure
 
 ```text
 RAG-Document-Chatbot/
 │
-├── 📂 src/
+├── src/
 │   ├── __init__.py
 │   ├── document_loader.py
 │   ├── embeddings.py
@@ -222,6 +252,9 @@ RAG-Document-Chatbot/
 │   ├── text_splitter.py
 │   └── vector_store.py
 │
+├── data/
+│   └── sample.pdf
+│
 ├── app.py
 ├── evaluate.py
 ├── requirements.txt
@@ -229,221 +262,221 @@ RAG-Document-Chatbot/
 └── .gitignore
 ```
 
-### 🔧 Main Components
+### Main Components
 
 **`document_loader.py`**
-📄 Loads PDF documents using `PyPDFLoader` and converts pages into LangChain `Document` objects.
+
+Loads PDF documents using `PyPDFLoader`.
 
 **`text_splitter.py`**
-✂️ Splits extracted document text into smaller chunks.
+
+Splits documents into overlapping chunks using `RecursiveCharacterTextSplitter`.
 
 **`embeddings.py`**
-🧠 Handles generation of vector embeddings.
+
+Initializes the `nomic-embed-text` embedding model through Ollama.
 
 **`vector_store.py`**
-🗄️ Creates and manages the ChromaDB vector store.
+
+Processes documents, generates embeddings, and stores document vectors in ChromaDB.
 
 **`retriever.py`**
-🔎 Handles semantic retrieval from the vector database.
+
+Provides semantic retrieval from the ChromaDB vector store.
 
 **`hybrid_retriever.py`**
-🔀 Combines semantic search and BM25 retrieval using normalized weighted scores.
+
+Combines semantic similarity scores with BM25 scores using normalized weighted ranking.
 
 **`rag_pipeline.py`**
-🧩 Connects document retrieval, context construction, LLM generation, and conversational processing.
+
+Handles question rewriting, hybrid retrieval, context construction, and LLM-based answer generation.
 
 **`app.py`**
-🌐 Provides the Streamlit chatbot interface.
+
+Provides the Streamlit user interface for PDF uploads and conversational question answering.
 
 **`evaluate.py`**
-📈 Evaluates Semantic Search, BM25, and Hybrid Retrieval using Recall@5.
 
----
+Evaluates Semantic Search, BM25, and Hybrid Retrieval using Recall@5.
 
-## ⚙️ Setup
+## 💻 Installation
 
-### 📋 Prerequisites
+### Prerequisites
 
 Make sure the following are installed:
 
-* 🐍 Python 3.10+
-* 🦙 Ollama
-* 🔧 Git
+* Python 3.10+
+* Ollama
+* Git
 
-### 🐍 Create Virtual Environment
+### 1. Clone the Repository
 
-Windows:
+```bash
+git clone https://github.com/YOUR_USERNAME/RAG-Document-Chatbot.git
+cd RAG-Document-Chatbot
+```
+
+### 2. Create a Virtual Environment
+
+#### Windows
 
 ```powershell
 python -m venv rag_env
-```
-
-Activate it:
-
-```powershell
 rag_env\Scripts\activate
 ```
 
-### 📦 Install Dependencies
+#### Linux/macOS
 
-```powershell
+```bash
+python3 -m venv rag_env
+source rag_env/bin/activate
+```
+
+### 3. Install Python Dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
----
+## 🤖 Ollama Setup
 
-## 🦙 Ollama Configuration
+This project uses Ollama for local LLM and embedding inference.
 
-The project uses **Ollama** for local LLM inference.
+Install Ollama and make sure it is running.
 
-Make sure Ollama is installed and running.
+Pull the required models:
 
-Pull the required model:
-
-```powershell
+```bash
 ollama pull llama3.2
+ollama pull nomic-embed-text
 ```
 
-Verify the model:
+Verify the installed models:
 
-```powershell
+```bash
 ollama list
 ```
 
-The `llama3.2` model should be available before running the chatbot.
+Both models should be available before starting the application.
 
----
-
-## 📄 Adding a PDF
-
-Place the PDF document you want to query inside the:
-
-```text
-data/
-```
-
-directory.
-
-Example:
-
-```text
-data/
-└── your_document.pdf
-```
-
-PDF documents are excluded from the Git repository to avoid uploading potentially large or private files.
-
----
-
-## 🚀 Running the Chatbot
+## ▶️ Running the Application
 
 Start the Streamlit application:
 
-```powershell
+```bash
 streamlit run app.py
 ```
 
-The application will provide a local URL, usually:
+Open the local URL displayed by Streamlit in your browser.
 
-```text
-http://localhost:8501
-```
+Upload a PDF document and start asking questions about its content.
 
-Open the URL in your browser to interact with the chatbot.
-
----
-
-## 🧪 Running Retrieval Evaluation
+## 🧪 Running the Evaluation
 
 To evaluate the retrieval system:
 
-```powershell
+```bash
 python evaluate.py
 ```
 
-The evaluation compares:
+The script compares:
 
 ```text
-🔎 Semantic Search
-🔤 BM25
-🔀 Hybrid Retrieval
+Semantic Search
+BM25
+Hybrid Retrieval
 ```
 
-using **Recall@5**.
+using Recall@5.
 
----
+## ❓ Example Questions
 
-## 💡 Example Questions
-
-The chatbot can answer questions based on the content of the uploaded document.
+After uploading a suitable PDF, questions can include:
 
 ```text
-❓ What is Generative AI?
+What is Generative AI?
 
-❓ What types of content can Generative AI create?
+What types of content can Generative AI create?
 
-❓ How is Generative AI different from traditional AI?
+How is Generative AI different from traditional AI?
 
-❓ What are the applications of Generative AI?
+What are the applications of Generative AI?
 
-❓ What is the Transformer architecture?
+What is the Transformer architecture?
 
-❓ What is self-attention?
+What is self-attention?
 
-❓ What is an LLM?
+What is an LLM?
 
-❓ What is retrieval augmented generation?
+What is Retrieval-Augmented Generation?
+
+Why is retrieval useful for LLMs?
+
+What is fine-tuning?
+
+What are hallucinations in LLMs?
 ```
 
-💬 Follow-up questions can also be asked using conversational memory.
+Follow-up questions can also be asked using the conversation history.
 
----
+## 🧠 Design Decisions
 
-## ⚠️ Important Notes
+### Why Hybrid Retrieval?
 
-### 🦙 Local LLM
+Semantic search is effective at understanding the meaning of a query, while BM25 is effective at matching important keywords.
 
-The project uses **Ollama** for local LLM inference. The required Llama model must be installed locally before running the chatbot.
+Combining both methods provides two complementary retrieval signals:
 
-### 🗄️ ChromaDB
+```text
+Semantic Similarity
+        +
+Keyword Matching
+        =
+Hybrid Retrieval
+```
 
-The ChromaDB vector store is generated locally and is excluded from the Git repository.
+The current implementation uses a 60:40 weighting between semantic and BM25 scores.
 
-### 🐍 Virtual Environment
+### Why Local Models?
 
-The Python virtual environment is excluded from the Git repository using `.gitignore`.
+Ollama allows the LLM and embedding model to run locally.
 
-### 📄 PDF Documents
+Benefits include:
 
-Local PDF documents are excluded from the repository to avoid uploading potentially large or private files.
+* No external LLM API dependency
+* Local document processing
+* Greater control over data
+* No API key required for inference
 
----
+## ⚠️ Limitations
+
+* Current implementation processes one uploaded document at a time.
+* Retrieval quality depends on chunking and embedding quality.
+* BM25 uses simple whitespace-based tokenization.
+* The current evaluation dataset is limited to the included test questions and document.
+* Local LLM performance depends on available system hardware.
 
 ## 🔮 Future Improvements
 
-* 🔄 Reranking retrieved chunks
-* 📈 Recall@1 and MRR evaluation
-* 📝 Answer-level evaluation
-* 🛡️ Hallucination detection
-* 🔍 Improved query rewriting
-* 📚 Support for multiple PDF documents
-* 📂 Support for additional document formats
-* 💬 Improved conversational context management
-* ⚡ Streaming LLM responses
-* ☁️ Web deployment
-* 🔐 User authentication
-* 🗄️ Cloud-based vector storage
+* Add support for multiple documents
+* Add document management and deletion
+* Implement cross-encoder reranking
+* Improve BM25 tokenization
+* Add Precision@K, MRR, and NDCG evaluation
+* Add answer-level evaluation
+* Improve query rewriting
+* Add streaming responses
+* Add support for additional document formats
+* Add web deployment
+* Add authentication and user-specific document collections
 
----
+## 📄 License
 
-## 👨‍💻 Author
+This project is intended for educational and portfolio purposes.
+
+## 👩‍💻 Author
 
 **Neha Chandwani**
 
-🎓 B.Tech Computer Science and Engineering
-
----
-
-## 📜 License
-
-This project is intended for **educational and portfolio purposes**.
+B.Tech Computer Science and Engineering
