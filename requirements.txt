@@ -1,5 +1,9 @@
 langchain
 langchain-community
+langchain-core
+langchain-text-splitters
+langchain-ollama
+langchain-chroma
 chromadb
 rank-bm25
 sentence-transformers
