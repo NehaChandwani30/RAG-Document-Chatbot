@@ -1,0 +1,8 @@
+langchain
+langchain-community
+chromadb
+rank-bm25
+sentence-transformers
+streamlit
+ollama
+pypdf

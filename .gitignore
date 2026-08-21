@@ -1,0 +1,27 @@
+# Virtual environment
+rag_env/
+venv/
+.venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# ChromaDB
+chroma_db/
+
+# Local data
+data/*.pdf
+
+# Environment variables
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
